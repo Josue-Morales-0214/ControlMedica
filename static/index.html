@@ -48,6 +48,31 @@
             font-size: 13px;
         }
 
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #userEmail {
+            font-size: 13px;
+        }
+
+        .btn-logout {
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.5);
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
         .stats {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -705,9 +730,16 @@
                 <h1>📋 Sistema de Inventario de Medicamentos</h1>
                 <p>Carro de Urgencias - Control Profesional</p>
             </div>
-            <div style="text-align: right;">
-                <p style="font-size: 11px;">🌐 Acceso en Red</p>
-                <p id="connectionStatus" style="font-size: 11px;">● Conectado</p>
+            <div class="user-info">
+                <div style="text-align: right;">
+                    <p style="font-size: 11px;">🌐 Acceso en Red</p>
+                    <p id="connectionStatus" style="font-size: 11px;">● Conectado</p>
+                </div>
+                <div style="text-align: right; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 15px;">
+                    <p style="font-size: 11px;">👤 Usuario</p>
+                    <p id="userEmail" style="font-size: 11px;">Cargando...</p>
+                    <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+                </div>
             </div>
         </div>
 
@@ -1461,21 +1493,58 @@
                     const detalle = mov.tipo === 'SALIDA' ? `Turno: ${mov.turno}` : '-';
                     
                     tbody.innerHTML += `
-                        <tr>
-                            <td><span class="badge ${badge}">${mov.tipo}</span></td>
-                            <td>${mov.fecha}</td>
-                            <td>${mov.medicamento_nombre}</td>
-                            <td style="text-align: center;">${mov.cantidad}</td>
-                            <td>${detalle}</td>
-                        </tr>
-                    `;
-                });
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
+                        <!-- Firebase SDK -->
+                        <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js"></script>
+                        <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js"></script>
+                        <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js"></script>
 
-        // ===== HISTORIAL COMPLETO POR MES =====
+                        <script>
+                            // CONFIGURACIÓN FIREBASE
+                            const firebaseConfig = {
+                                apiKey: "AIzaSyAsYhBb9H6Gj4a5OqZ0R1S2T3U4V5W6X7Y",
+                                authDomain: "control-medica.firebaseapp.com",
+                                projectId: "control-medica",
+                                storageBucket: "control-medica.appspot.com",
+                                messagingSenderId: "123456789012",
+                                appId: "1:123456789012:web:abcdef1234567890"
+                            };
+
+                            firebase.initializeApp(firebaseConfig);
+                            const auth = firebase.auth();
+                            const db = firebase.firestore();
+
+                            // Verificar autenticación
+                            auth.onAuthStateChanged(user => {
+                                if (!user) {
+                                    window.location.href = 'login.html';
+                                } else {
+                                    localStorage.setItem('userEmail', user.email);
+                                    document.getElementById('userEmail').textContent = user.email;
+                                }
+                            });
+
+                            // LOGOUT
+                            function logout() {
+                                auth.signOut().then(() => {
+                                    localStorage.removeItem('userEmail');
+                                    window.location.href = 'login.html';
+                                });
+                            }
+
+                            // Detectar automáticamente la URL del API
+                            const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                                ? 'http://localhost:5000/api'
+                                : 'https://controlmedica.onrender.com/api';
+        
+                            let tipoSeleccionado = 'INGRESO';
+
+                            // Inicializar
+                            document.addEventListener('DOMContentLoaded', function() {
+                                inicializarFecha();
+                                setearLunesActual();
+                                setearFechaQuincenal();
+                                cargarMedicamentos();
+                                cargarEstadisticas();
         
         async function cargarHistorialCompleto() {
             try {

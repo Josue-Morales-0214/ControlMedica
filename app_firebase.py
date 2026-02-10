@@ -11,8 +11,9 @@ import calendar
 import os
 import json
 from dotenv import load_dotenv
+from functools import wraps
 import firebase_admin
-from firebase_admin import credentials, firestore, storage
+from firebase_admin import credentials, firestore, storage, auth as firebase_auth
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
@@ -51,6 +52,35 @@ if firebase_config:
 else:
     print("⚠️  FIREBASE_CONFIG no configurado. Usa Cloud Firestore local o configura variables de entorno.")
     db = None
+
+# =====================================================
+# AUTENTICACIÓN Y PROTECCIÓN DE ENDPOINTS
+# =====================================================
+
+def verificar_token(f):
+    """Decorador para verificar token de autenticación Firebase"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        
+        if not token:
+            return jsonify({'error': 'Token requerido'}), 401
+        
+        try:
+            # Remover "Bearer " del token si existe
+            if token.startswith('Bearer '):
+                token = token[7:]
+            
+            # Verificar token con Firebase Admin SDK
+            decoded_token = firebase_auth.verify_id_token(token)
+            request.user_id = decoded_token['uid']
+            request.user_email = decoded_token['email']
+            
+            return f(*args, **kwargs)
+        except Exception as e:
+            return jsonify({'error': f'Token inválido: {str(e)}'}), 401
+    
+    return decorated_function
 
 # =====================================================
 # FUNCIONES DE FIREBASE FIRESTORE
