@@ -1130,7 +1130,48 @@
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js"></script>
+
     <script>
+        // CONFIGURACIÓN FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyBMZzNbQdjT8s-dx-6g8dg2VVZInPymfFA",
+            authDomain: "control-medica.firebaseapp.com",
+            projectId: "control-medica",
+            storageBucket: "control-medica.firebasestorage.app",
+            messagingSenderId: "49259805115",
+            appId: "1:49259805115:web:c97ed9ed44167895ceac9e",
+            measurementId: "G-EYX8DFBMX3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Verificar autenticación
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                localStorage.setItem('userEmail', user.email);
+                const userEmailEl = document.getElementById('userEmail');
+                if (userEmailEl) {
+                    userEmailEl.textContent = user.email;
+                }
+            }
+        });
+
+        // LOGOUT
+        function logout() {
+            auth.signOut().then(() => {
+                localStorage.removeItem('userEmail');
+                window.location.href = 'login.html';
+            });
+        }
+
         // Detectar automáticamente la URL del API
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? 'http://localhost:5000/api'
@@ -1493,61 +1534,18 @@
                     const detalle = mov.tipo === 'SALIDA' ? `Turno: ${mov.turno}` : '-';
                     
                     tbody.innerHTML += `
-                        <!-- Firebase SDK -->
-                        <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js"></script>
-                        <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js"></script>
-                        <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js"></script>
+                        <tr>
+                            <td><strong>${mov.fecha}</strong></td>
+                            <td><span class="badge ${badge}">${mov.tipo}</span></td>
+                            <td>${mov.medicamento_nombre}</td>
+                            <td style="text-align: center; font-weight: bold;">${mov.cantidad}</td>
+                            <td>${detalle}</td>
+                            <td><button class="action-btn" onclick="abrirModalEditar('${mov.id}', '${mov.tipo}', '${mov.fecha}', '${mov.medicamento_nombre}', ${mov.cantidad}, '${detalle.replace(/'/g, "\\'")}')">👁️ Ver</button></td>
+                        </tr>
+                    `;
+                });
 
-                        <script>
-                            // CONFIGURACIÓN FIREBASE
-                            const firebaseConfig = {
-                                apiKey: "AIzaSyBMZzNbQdjT8s-dx-6g8dg2VVZInPymfFA",
-                                authDomain: "control-medica.firebaseapp.com",
-                                projectId: "control-medica",
-                                storageBucket: "control-medica.firebasestorage.app",
-                                messagingSenderId: "49259805115",
-                                appId: "1:49259805115:web:c97ed9ed44167895ceac9e",
-                                measurementId: "G-EYX8DFBMX3"
-                            };
-
-                            firebase.initializeApp(firebaseConfig);
-                            const auth = firebase.auth();
-                            const db = firebase.firestore();
-
-                            // Verificar autenticación
-                            auth.onAuthStateChanged(user => {
-                                if (!user) {
-                                    window.location.href = 'login.html';
-                                } else {
-                                    localStorage.setItem('userEmail', user.email);
-                                    document.getElementById('userEmail').textContent = user.email;
-                                }
-                            });
-
-                            // LOGOUT
-                            function logout() {
-                                auth.signOut().then(() => {
-                                    localStorage.removeItem('userEmail');
-                                    window.location.href = 'login.html';
-                                });
-                            }
-
-                            // Detectar automáticamente la URL del API
-                            const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                                ? 'http://localhost:5000/api'
-                                : 'https://controlmedica.onrender.com/api';
-        
-                            let tipoSeleccionado = 'INGRESO';
-
-                            // Inicializar
-                            document.addEventListener('DOMContentLoaded', function() {
-                                inicializarFecha();
-                                setearLunesActual();
-                                setearFechaQuincenal();
-                                cargarMedicamentos();
-                                cargarEstadisticas();
-        
-        async function cargarHistorialCompleto() {
+                cargarHistorialCompleto = async function cargarHistorialCompleto() {
             try {
                 const tipo = document.getElementById('filtroTipo').value;
                 const mes = document.getElementById('filtroMes').value;
