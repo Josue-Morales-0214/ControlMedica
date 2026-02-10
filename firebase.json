@@ -9,7 +9,7 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "destination": "http://localhost:5000"
+        "destination": "https://controlmedica.onrender.com/api/**"
       },
       {
         "source": "**",
