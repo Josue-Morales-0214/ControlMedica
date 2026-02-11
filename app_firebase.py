@@ -255,8 +255,26 @@ def get_movimientos():
         
         limit = int(request.args.get('limit', 100))
         
-        # Obtener movimientos sin filtros complejos (sin índices)
-        query = db.collection('movimientos').order_by('fecha_registro', direction=firestore.Query.DESCENDING).limit(limit)
+        # Obtener parámetros de filtro
+        fecha_desde = request.args.get('fecha_desde')
+        fecha_hasta = request.args.get('fecha_hasta')
+        
+        query = db.collection('movimientos')
+        
+        # Aplicar filtros de fecha si existen
+        if fecha_desde:
+            query = query.where('fecha', '>=', fecha_desde)
+        if fecha_hasta:
+            query = query.where('fecha', '<=', fecha_hasta)
+            
+        # Ordenar y limitar results
+        # Nota: Si se filtra por fecha, se debe ordenar por fecha para evitar errores de índice compuesto
+        if fecha_desde or fecha_hasta:
+            query = query.order_by('fecha', direction=firestore.Query.DESCENDING)
+        else:
+            query = query.order_by('fecha_registro', direction=firestore.Query.DESCENDING)
+            
+        query = query.limit(limit)
         
         movimientos = []
         for doc in query.stream():
